@@ -3,7 +3,7 @@
 #include <LiquidCrystal.h>
 //AS7343 library
 
-// LCD pins 
+// LCD pins    
 const int RS = 22, EN = 23, D4 = 24, D5 = 25, D6 = 26, D7 = 27;
 LiquidCrystal lcd(RS, EN, D4, D5, D6, D7);
 //LED Pins 
