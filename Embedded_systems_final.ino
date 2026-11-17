@@ -8,6 +8,7 @@ const int RS = 22, EN = 23, D4 = 24, D5 = 25, D6 = 26, D7 = 27;
 LiquidCrystal lcd(RS, EN, D4, D5, D6, D7);
 //LED Pins 
 const int RedLED = 12, YellowLED = 11, GreenLED = 10, BlueLED = 9;
+const int ledPins[] = {RedLED, YellowLED, GreenLED, BlueLED};
 //Pontentiometer PIN - Analog pin for setting aquarium volume
 const int TankSetPin= 0;
 // LED for reading the ammonia strip
@@ -28,6 +29,7 @@ unsigned long now;
 int gallons=0;
 bool on_bounce= false; 
 bool on_pressed= false; 
+bool onReleased = false;
 // setting up the states 
 bool off_state= true; 
 bool on_state = false; 
@@ -46,8 +48,10 @@ bool aquarium_calibration= false;
  // onPressed = true;
 //}
 
+void showLED(int selectedPin);
 
 void setup() {
+  Serial.begin(9600);
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);// move cursor to (0, 0)
   lcd.print("OFF");
@@ -55,12 +59,12 @@ void setup() {
   pinMode(onButtonPin, INPUT_PULLUP);
   pinMode(offButtonPin, INPUT_PULLUP);
   pinMode(resetButtonPin, INPUT_PULLUP);
-  pinMode(RedLED, OUPUT);
-  pinMode(YelloLED, OUPUT);
-  pinMode(GreenLED, OUPUT);
-  pinMode(BlueLED, OUPUT);
-  pinMode(Relay,OUPUT);
-  pinMode(readingLEDpin, OUPUT);
+  pinMode(RedLED, OUTPUT);
+  pinMode(YellowLED, OUTPUT);
+  pinMode(GreenLED, OUTPUT);
+  pinMode(BlueLED, OUTPUT);
+  pinMode(Relay,OUTPUT);
+  pinMode(ReadingLEDpin, OUTPUT);
   lastReadingTime = millis();
 
 
@@ -84,47 +88,68 @@ void loop() {
 
 
   while(off_state){
-    lcd.clear();
-    lcd.setCursor(0, 0);// move cursor to (0, 0)
-    lcd.print("OFF");
-    digitalWrite(RedLED,HIGH);
+    showLED(RedLED);
     if(digitalRead(onButtonPin)==LOW && (millis()-now)>=bounce){
       now=millis();
       off_state=false; 
       idle_state= true; 
       aquarium_calibration= true; 
+      lcd.clear();
+      lcd.setCursor(0, 0);// move cursor to (0, 0)
+      lcd.print("Set Gallons");  
     }
     return;
 
   }
   while(idle_state){
-    digitalWrite(YellowLED,HIGH);
+    showLED(YellowLED);
     if(aquarium_calibration==true){
-      lcd.clear();
-      lcd.setCursor(0, 0);// move cursor to (0, 0)
-      lcd.print("OFF");
-
-      gallons = map(analogRead(A0), 0, 1023, 1, 120);
+      gallons = map(analogRead(A0), 0, 1023, 1, 100);
       //function conversion from voltage to volume 
       lcd.setCursor(0,1);
       lcd.print(gallons);
       Serial.println(gallons);
       //function that will print out the volume on the LCD 
       //LCD also displays enter volume and then press on button 
-      if(digitalRead(onButtonPin)==LOW){
-        aquarium_calibration==false);
+      if(digitalRead(onButtonPin)==LOW && (millis()-now)>=bounce){
+        now=millis();
+        aquarium_calibration=false;
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Idle");
         return;
       }
+      return;
     }
     else{
-      now = millis();
       if (now - lastReadingTime >= ReadingInterval) {
         lastReadingTime = now;
         Serial.println("15 minutes have passed.");
       }
       //read the light sensor every 15 minutes 
     }
+    if(digitalRead(offButtonPin)==LOW && (millis()-now)>=bounce){
+      now=millis();
+      off_state=true; 
+      idle_state= false; 
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("OFF");
+    }
+    return; 
 
   }
+} 
+
+void showLED(int selectedPin) {
+  // Turn all four off first.
+  for (int i = 0; i < 4; i++) {
+    digitalWrite(ledPins[i], LOW);
+  }
+
+  // Turn on the one you selected.
+  digitalWrite(selectedPin, HIGH);
+}
+
 
 
